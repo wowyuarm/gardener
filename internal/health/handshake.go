@@ -45,6 +45,9 @@ func NewVerifier() (*Verifier, error) {
 	cfg.Seed = false
 	cfg.NoDefaultPortForwarding = true
 	cfg.DisableAcceptRateLimiting = true
+	// Pick a free ephemeral port so concurrent gardener runs (or other anacrolix
+	// clients) don't clash on the default 42069.
+	cfg.ListenPort = 0
 	cfg.Logger = cfg.Logger.WithFilterLevel(analog.Disabled)
 	cl, err := torrent.NewClient(cfg)
 	if err != nil {
