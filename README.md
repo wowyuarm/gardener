@@ -3,11 +3,14 @@
 A CLI that searches BT torrent sites and ranks results by **verified** swarm health,
 not by the seeder counts the site claims (which are usually stale or inflated).
 
+Forked from [joway/gardener](https://github.com/joway/gardener) with additional
+providers and features.
+
 ## Why
 
-`torrentz2.nz` and similar meta-search engines aggregate seeder counts that are
-often wildly out of date. A torrent listed with "200 seeders" may have zero
-peers actually serving pieces. `gardener` takes the top N candidates and:
+Torrent sites report seeder counts that are often wildly out of date. A torrent
+listed with "200 seeders" may have zero peers actually serving pieces. `gardener`
+takes the top N candidates and:
 
 1. Looks up live peers in the DHT.
 2. Scrapes every tracker advertised in the magnet URI.
@@ -17,10 +20,21 @@ peers actually serving pieces. `gardener` takes the top N candidates and:
 The result is sorted by a weighted health score so the top entry is the one most
 likely to actually download.
 
+## Providers
+
+| provider | scope | note |
+|----------|-------|------|
+| `torrentz2` | General meta-search | Default, but often blocked by CDN/firewall |
+| `nyaa` | Anime, Asian media, software | Works behind proxies, reliable HTML structure |
+
+```sh
+gardener --provider nyaa "one piece"
+```
+
 ## Install
 
 ```sh
-go install github.com/joway/gardener/cmd/gardener@latest
+go install github.com/wowyuarm/gardener/cmd/gardener@latest
 ```
 
 Or build locally:
@@ -34,9 +48,12 @@ go build -o gardener ./cmd/gardener
 ```sh
 gardener "ubuntu 24.04"
 gardener -n 30 "..."                # test top 30 instead of default 20
+gardener --provider nyaa "..."      # search Nyaa instead of torrentz2
 gardener -v "..."                   # also show site-reported seeds/peers
 gardener --json "..."               # machine-readable output with full magnets
 gardener --timeout 120s "..."       # extend overall budget
+gardener -d "..."                   # auto-download best result with aria2c
+gardener -d --provider nyaa "..."   # search Nyaa and download best result
 ```
 
 ## Output
@@ -100,8 +117,7 @@ type Provider interface {
 
 Wire it up in `cmd/gardener/main.go:pickProvider`. `SearchResult.Magnet` must be
 sanitized — only `udp/http/https` trackers in the `tr=` params (anacrolix/torrent
-panics on unknown schemes). See `parseMagnet` in `internal/search/torrentz2.go`
-for the reference implementation.
+panics on unknown schemes). See `internal/search/magnet.go` for the reference.
 
 ## Caveats
 
@@ -110,5 +126,7 @@ for the reference implementation.
 - Handshake sampling is capped at 30 peers per torrent. Healthy-but-slow-to-respond
   swarms may show `verified < dht`. Raise `--verify-timeout` if that hurts you.
 - torrentz2 is HTML-scraped; if the site changes its markup, the scraper breaks.
+- Nyaa is HTML-scraped; same caveat applies.
 - The verifier writes to a temp dir but never actually downloads piece data. The
   dir is cleaned up on exit.
+- `--download` requires `aria2c` in PATH.
