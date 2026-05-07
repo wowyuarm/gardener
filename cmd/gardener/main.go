@@ -128,7 +128,14 @@ func run(query string, opts *options) error {
 			out = append(out, r)
 		}
 	}
-	sort.SliceStable(out, func(i, j int) bool { return out[i].Score > out[j].Score })
+	// Sort by verified seeders first (gold signal), then by score as tiebreaker
+	sort.SliceStable(out, func(i, j int) bool {
+		vi, vj := out[i].Verify.VerifiedSeeds, out[j].Verify.VerifiedSeeds
+		if vi != vj {
+			return vi > vj
+		}
+		return out[i].Score > out[j].Score
+	})
 
 	if opts.jsonOut {
 		return output.RenderJSON(os.Stdout, out)
