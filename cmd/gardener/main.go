@@ -43,7 +43,7 @@ func main() {
 	root.Flags().IntVarP(&opts.limit, "limit", "n", 20, "max torrents to test")
 	root.Flags().BoolVar(&opts.jsonOut, "json", false, "emit JSON instead of a table")
 	root.Flags().BoolVarP(&opts.verbose, "verbose", "v", false, "show site-reported seed/peer columns")
-	root.Flags().StringVar(&opts.provider, "provider", "torrentz2", "search provider (torrentz2)")
+	root.Flags().StringVar(&opts.provider, "provider", "torrentz2", "search provider: torrentz2, nyaa")
 	root.Flags().DurationVar(&opts.overall, "timeout", 90*time.Second, "overall wall-clock budget")
 	root.Flags().DurationVar(&opts.dhtTimeout, "dht-timeout", 15*time.Second, "per-torrent DHT lookup budget")
 	root.Flags().DurationVar(&opts.trkTimeout, "tracker-timeout", 8*time.Second, "per-tracker scrape timeout")
@@ -137,8 +137,10 @@ func pickProvider(name string) (search.Provider, error) {
 	switch name {
 	case "torrentz2", "":
 		return search.NewTorrentz2(), nil
+	case "nyaa":
+		return search.NewNyaa(), nil
 	}
-	return nil, fmt.Errorf("unknown provider %q", name)
+	return nil, fmt.Errorf("unknown provider %q (try torrentz2, nyaa)", name)
 }
 
 func checkOne(ctx context.Context, d *health.DHT, v *health.Verifier, r search.SearchResult, opts *options) *health.Report {
