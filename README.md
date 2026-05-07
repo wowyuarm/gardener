@@ -24,10 +24,12 @@ likely to actually download.
 
 | provider | scope | note |
 |----------|-------|------|
-| `torrentz2` | General meta-search | Default, but often blocked by CDN/firewall |
-| `nyaa` | Anime, Asian media, software | Works behind proxies, reliable HTML structure |
+| `tpb` | Movies, TV, software, general | The Pirate Bay via pirateproxy.live, no Cloudflare ✅ |
+| `nyaa` | Anime, Asian media, software | Clean HTML, works behind proxies ✅ |
+| `torrentz2` | General meta-search | Default, but often blocked by CDN/firewall ⚠️ |
 
 ```sh
+gardener --provider tpb "inception 2010"
 gardener --provider nyaa "one piece"
 ```
 
@@ -48,11 +50,13 @@ go build -o gardener ./cmd/gardener
 ```sh
 gardener "ubuntu 24.04"
 gardener -n 30 "..."                # test top 30 instead of default 20
-gardener --provider nyaa "..."      # search Nyaa instead of torrentz2
+gardener --provider tpb "..."       # search The Pirate Bay
+gardener --provider nyaa "..."      # search Nyaa
 gardener -v "..."                   # also show site-reported seeds/peers
 gardener --json "..."               # machine-readable output with full magnets
 gardener --timeout 120s "..."       # extend overall budget
 gardener -d "..."                   # auto-download best result with aria2c
+gardener -d --provider tpb "..."    # search TPB and download best result
 gardener -d --provider nyaa "..."   # search Nyaa and download best result
 ```
 
@@ -115,9 +119,9 @@ type Provider interface {
 }
 ```
 
-Wire it up in `cmd/gardener/main.go:pickProvider`. `SearchResult.Magnet` must be
-sanitized — only `udp/http/https` trackers in the `tr=` params (anacrolix/torrent
-panics on unknown schemes). See `internal/search/magnet.go` for the reference.
+Wire it up in `cmd/gardener/main.go:pickProvider`. Magnet sanitization is handled
+by `internal/search/magnet.go` — only `udp/http/https` trackers kept (anacrolix/torrent
+panics on unknown schemes).
 
 ## Caveats
 
