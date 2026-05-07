@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/netip"
 	"os"
+	"os/exec"
 	"os/signal"
 	"sort"
 	"sync"
@@ -22,6 +23,7 @@ type options struct {
 	limit        int
 	jsonOut      bool
 	verbose      bool
+	download     bool
 	provider     string
 	overall      time.Duration
 	dhtTimeout   time.Duration
@@ -43,6 +45,7 @@ func main() {
 	root.Flags().IntVarP(&opts.limit, "limit", "n", 20, "max torrents to test")
 	root.Flags().BoolVar(&opts.jsonOut, "json", false, "emit JSON instead of a table")
 	root.Flags().BoolVarP(&opts.verbose, "verbose", "v", false, "show site-reported seed/peer columns")
+	root.Flags().BoolVarP(&opts.download, "download", "d", false, "auto-download the best result with aria2c")
 	root.Flags().StringVar(&opts.provider, "provider", "torrentz2", "search provider: torrentz2, nyaa")
 	root.Flags().DurationVar(&opts.overall, "timeout", 90*time.Second, "overall wall-clock budget")
 	root.Flags().DurationVar(&opts.dhtTimeout, "dht-timeout", 15*time.Second, "per-torrent DHT lookup budget")
@@ -130,7 +133,22 @@ func run(query string, opts *options) error {
 	if opts.jsonOut {
 		return output.RenderJSON(os.Stdout, out)
 	}
-	return output.RenderTable(os.Stdout, out, opts.verbose)
+	if err := output.RenderTable(os.Stdout, out, opts.verbose); err != nil {
+		return err
+	}
+
+	if opts.download && len(out) > 0 {
+		best := out[0]
+		if best.Verify.VerifiedSeeds == 0 {
+			fmt.Fprintln(os.Stderr, "⚠  best result has no verified seeders, skipping download")
+			return nil
+		}
+		fmt.Fprintf(os.Stderr, "\n↓ downloading: %s\n", best.Name)
+		fmt.Fprintf(os.Stderr, "  magnet: %s\n\n", best.Magnet)
+		return download(best.Magnet)
+	}
+
+	return nil
 }
 
 func pickProvider(name string) (search.Provider, error) {
@@ -185,6 +203,19 @@ func checkOne(ctx context.Context, d *health.DHT, v *health.Verifier, r search.S
 
 	rep.Score = health.Score(rep)
 	return rep
+}
+
+func download(magnet string) error {
+	cmd := exec.Command("aria2c",
+		"--max-upload-limit=100K",
+		"--seed-time=0",
+		"--continue=true",
+		"--summary-interval=15",
+		magnet,
+	)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func truncateForLog(s string, n int) string {
