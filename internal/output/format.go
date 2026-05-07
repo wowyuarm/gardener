@@ -9,7 +9,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 
-	"github.com/joway/gardener/internal/health"
+	"github.com/wowyuarm/gardener/internal/health"
 )
 
 func RenderTable(w io.Writer, reports []*health.Report, verbose bool) error {

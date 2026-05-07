@@ -14,9 +14,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/joway/gardener/internal/health"
-	"github.com/joway/gardener/internal/output"
-	"github.com/joway/gardener/internal/search"
+	"github.com/wowyuarm/gardener/internal/health"
+	"github.com/wowyuarm/gardener/internal/output"
+	"github.com/wowyuarm/gardener/internal/search"
 )
 
 type options struct {

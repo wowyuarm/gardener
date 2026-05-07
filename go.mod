@@ -1,4 +1,4 @@
-module github.com/joway/gardener
+module github.com/wowyuarm/gardener
 
 go 1.25.0
 
